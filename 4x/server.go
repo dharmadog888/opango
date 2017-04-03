@@ -1,25 +1,25 @@
 /*
-  4x - For Example web app...
+4x - For Example web app...
 
-  Demonstrates using the httpd package
-  resources to rapidly build a working
-  RESTful web server.
+Demonstrates using the httpd package
+resources to rapidly build a working
+RESTful web server.
 
-  Routing is managed by the httpd.Router and
-  is built specifically to handle the task of
-  implementing microservices via an HTTP REST
-  protocol. Due to the nature of APIs in general
-  and microserives specifally, this has been
-  limited to the following transaction types
-  as recognized via the HTTP Content-Type header:
+Routing is managed by the httpd.Router and
+is built specifically to handle the task of
+implementing microservices via an HTTP REST
+protocol. Due to the nature of APIs in general
+and microserives specifally, this has been
+limited to the following transaction types
+as recognized via the HTTP Content-Type header:
 
-    Form Data: application/x-www-form-urlencoded
-	JSON Data: application/json
-	File Uploads: multipart/form-data
+Form Data: application/x-www-form-urlencoded
+JSON Data: application/json
+File Uploads: multipart/form-data
 
-  All other mime types are treated as text when
-  sent to the controller and can be specifically
-  managed at the application level.
+All other mime types are treated as text when
+sent to the controller and can be specifically
+managed at the application level.
 */
 package main
 
@@ -33,20 +33,21 @@ import (
 	"os"
 	"time"
 
-	httpd "bitbucket.org/dharmadog888/opango/httpd"
+	httpd "github.com/dharmadog888/opango/httpd"
 )
 
 const (
+	// DefaultConfig points to config file containing
 	// server ip:port and location of html content
 	DefaultConfig = "./config/x4.json"
 )
 
 var (
-	// Server configuration
+	// serverConf Server configuration poulated from config file
 	serverConf ServerConf
 )
 
-// Server configuration matters
+// ServerConf configuration matters
 type ServerConf struct {
 	Addr        string
 	ContentRoot string

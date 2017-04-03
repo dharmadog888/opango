@@ -29,17 +29,23 @@ import (
 const (
 	defaultIndexPage = "index.html"
 	ioBuffSize       = 2 * 1024 * 1024 // 2M
-	POST             = "POST"
-	GET              = "GET"
-	PUT              = "PUT"
-	HEAD             = "HEAD"
 )
 
-// struct sent to controller that describes request
+/*
+POST, GET, PUT, DELETE httpd method names
+*/
+const (
+	POST = "POST"
+	GET  = "GET"
+	PUT  = "PUT"
+	HEAD = "HEAD"
+)
+
+// RestAPI struct sent to controller that describes request
 type RestAPI struct {
 	Method      string
-	Url         string
-	Uri         []string
+	URL         string
+	URI         []string
 	JSON        json.Decoder
 	Form        url.Values
 	MPForm      multipart.Form
@@ -53,24 +59,26 @@ type httpResponse struct {
 	Message string
 }
 
-// API results
-type ApiResponse struct {
+// APIResponse container for results
+type APIResponse struct {
 	httpResponse
 	Body string
 }
 
-// Routing map to assign URI to Controller
+// RouteMap map to assign URI to Controller
 type RouteMap map[string]IController
 
-// Web Router type mananges requests for
-// services for an App Server
+/*
+Router mananges requests for services
+on behalf of an App Server
+*/
 type Router struct {
 	routes     RouteMap
 	webroot    string
 	indexPages []string
 }
 
-// construct and return new Router
+// NewRouter constructor for  new Router
 func NewRouter(rmap RouteMap, root string) Router {
 	ndxpgs := make([]string, 1)
 	ndxpgs[0] = defaultIndexPage
@@ -80,12 +88,12 @@ func NewRouter(rmap RouteMap, root string) Router {
 	return rtr
 }
 
-// add/update uri to route mappings
+// SetRoute add/update uri to route mappings
 func (r Router) SetRoute(uri string, ctlr Controller) {
 	r.routes[uri] = &ctlr
 }
 
-// remove uri mapping
+// ClearRoute remove uri mapping
 func (r Router) ClearRoute(uri string) {
 	delete(r.routes, uri)
 }
@@ -136,7 +144,7 @@ func (r Router) serveFile(path string, resp http.ResponseWriter) error {
 	var body []byte
 
 	// file exists?
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err = os.Stat(path); os.IsNotExist(err) {
 		return errors.New("File Not Found")
 	}
 
@@ -151,21 +159,21 @@ func (r Router) serveFile(path string, resp http.ResponseWriter) error {
 	return err
 }
 
-// ** Start point for routing from server ** //
+// RouteRequest Start point for routing from server ** //
 func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 
-	reqUrl := fmt.Sprintf("%s", req.URL)
-	urisplit := strings.Split(reqUrl, "?")
+	reqURL := fmt.Sprintf("%s", req.URL)
+	urisplit := strings.Split(reqURL, "?")
 	uri := strings.Split(urisplit[0], "/")
 
 	// hacking filters
-	if strings.Contains(reqUrl, "..") {
-		log.Printf("!! <-- 402: Forbidden (%s)", reqUrl)
+	if strings.Contains(reqURL, "..") {
+		log.Printf("!! <-- 402: Forbidden (%s)", reqURL)
 		http.Error(resp, "Forbidden,", 402)
 		return
 	}
 
-	ctrl, found := r.findRoute(reqUrl)
+	ctrl, found := r.findRoute(reqURL)
 
 	// do we have routing
 	if found != "" {
@@ -177,7 +185,7 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		}
 
 		// yes, delegate to controller...
-		api := RestAPI{Url: reqUrl, Uri: uri, Method: req.Method, Querystring: req.URL.Query()}
+		api := RestAPI{URL: reqURL, URI: uri, Method: req.Method, Querystring: req.URL.Query()}
 
 		// some investigation is required to
 		// figure out what type of data we got
@@ -245,12 +253,12 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		var path string
 
 		// default index page for root request
-		if reqUrl == "/" {
-			reqUrl = fmt.Sprintf("/%s", r.indexPages[0])
+		if reqURL == "/" {
+			reqURL = fmt.Sprintf("/%s", r.indexPages[0])
 		}
 
 		// keep absolute path "chrooted"
-		if strings.HasPrefix(reqUrl, "/") {
+		if strings.HasPrefix(reqURL, "/") {
 			path = r.webroot
 		} else {
 			// relative path
@@ -259,7 +267,7 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		}
 
 		// set real path to file
-		path += reqUrl
+		path += reqURL
 
 		// and attempt to serve it up
 		if err := r.serveFile(path, resp); err != nil {

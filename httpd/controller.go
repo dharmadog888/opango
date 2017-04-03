@@ -19,38 +19,41 @@ const (
 	pathSep = "/"
 )
 
-// URI Path Parameter Map
+// ParamMap URI Path Parameter Map
 type ParamMap map[string]string
 
-// Endpoint Processor - entrance to the Middle Kingdom
-type RestEndpoint func(req RestAPI, params ParamMap) (resp ApiResponse)
+// RestEndpoint function signature for API handlers
+type RestEndpoint func(req RestAPI, params ParamMap) (resp APIResponse)
 
-// Endpoint Specification
+// EndpointSpec method and path for endpoint
 type EndpointSpec struct {
 	Method string
 	Path   []string
 }
 
-// Routing Specification
+// EndpointMap maps endpoint URI to handler
 type EndpointMap struct {
 	Endpoint  EndpointSpec
 	Processor RestEndpoint
 }
 
+/*
+NewEndpointMap is a convenience constructor for mapping endpoints
+*/
 func NewEndpointMap(path string, method string, proc RestEndpoint) *EndpointMap {
 	em := EndpointMap{Endpoint: EndpointSpec{Method: method, Path: strings.Split(path, "/")}, Processor: proc}
 
 	return &em
 }
 
-// Controller Spec
+// IController The Controller interface spec
 type IController interface {
-	Route(params RestAPI) ApiResponse
+	Route(params RestAPI) APIResponse
 	SetupRouting(endpoints []EndpointMap) error
 	Routes() []EndpointMap
 }
 
-// Base implementation type
+// Controller the base implementation type
 type Controller struct {
 
 	// the map of endpoints to methods
@@ -58,20 +61,20 @@ type Controller struct {
 	emp []EndpointMap
 }
 
-// direct request to correct processor
-func (ctlr *Controller) Route(apiParams RestAPI) (resp ApiResponse) {
+// Route direct request to correct processor
+func (ctlr *Controller) Route(apiParams RestAPI) (resp APIResponse) {
 
 	// test for match
-	if params, proc := ctlr.UriMatch(apiParams.Uri, apiParams.Method); proc != nil {
+	if params, proc := ctlr.URIMatch(apiParams.URI, apiParams.Method); proc != nil {
 		// found one, call it...
 		resp = proc(apiParams, params)
 
 	} else {
 		// not found...
-		resp = ApiResponse{}
+		resp = APIResponse{}
 		resp.Code = 404
 
-		resp.Message = fmt.Sprint("Path not found	(%s)", apiParams.Uri)
+		resp.Message = fmt.Sprint("Path not found %s", apiParams.URI)
 		resp.Body = "{\"Error\": \"No endpoint found\"}"
 
 		log.Printf("?? Routing not found %v\n", apiParams)
@@ -81,7 +84,7 @@ func (ctlr *Controller) Route(apiParams RestAPI) (resp ApiResponse) {
 	return resp
 }
 
-// set up the controllers enpoint route mappings
+// SetupRouting isntall controllers enpoint route mappings
 func (ctlr *Controller) SetupRouting(endpoints []EndpointMap) (err error) {
 	// save to internal map
 	ctlr.emp = endpoints
@@ -89,28 +92,25 @@ func (ctlr *Controller) SetupRouting(endpoints []EndpointMap) (err error) {
 	return err
 }
 
-// reflect routing maps
+// Routes reflect routing maps
 func (ctlr Controller) Routes() (emp []EndpointMap) {
 	// return mappings
 	return emp
 }
 
-// the way
-func (ctlr Controller) UriMatch(uri []string, method string) (params map[string]string, processor RestEndpoint) {
-
-	// optimistic sets
-	match := true
+// URIMatch tries to identify a processor given an array of URI nodes
+func (ctlr Controller) URIMatch(uri []string, method string) (params map[string]string, processor RestEndpoint) {
 
 	// check all endpoints for matching
 	for tst := range ctlr.emp {
+		var match bool
+
 		ep := ctlr.emp[tst].Endpoint
 
 		// method testing first...
 		if !strings.EqualFold(method, ep.Method) {
-			match = false
 			continue
 		}
-
 		// create a fresh param map
 		pps := make(map[string]string)
 
@@ -150,8 +150,8 @@ func (ctlr Controller) UriMatch(uri []string, method string) (params map[string]
 	return params, processor
 }
 
-// Response Generator
-func (ctlr Controller) Response(code int, message string, body string) (resp ApiResponse) {
+// Response conveniece response enerator
+func (ctlr Controller) Response(code int, message string, body string) (resp APIResponse) {
 	resp.Code = code
 	resp.Message = message
 	resp.Body = body
@@ -159,6 +159,7 @@ func (ctlr Controller) Response(code int, message string, body string) (resp Api
 	return resp
 }
 
-func (ctlr Controller) ApiError(code int, err error) ApiResponse {
+// APIError conveniece error enerator
+func (ctlr Controller) APIError(code int, err error) APIResponse {
 	return ctlr.Response(code, err.Error(), "")
 }
