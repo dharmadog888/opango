@@ -21,13 +21,11 @@ Installation
 
 To get opango, run
 
-  go get github.com/dharamdog888/opango/...
+    go get github.com/dharamdog888/opango/...
+    (for entire project including 4x )
 
-  (for entire project including 4x )
-
-  go get github.com/dharmadog888/opango/httpd
-
-  (for just the Web Routing tools)
+    go get github.com/dharmadog888/opango/httpd
+    (for just the Web Routing tools)
 
 License
 -------
