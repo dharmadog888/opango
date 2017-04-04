@@ -1,26 +1,3 @@
-/*
-4x - For Example web app...
-
-Demonstrates using the httpd package
-resources to rapidly build a working
-RESTful web server.
-
-Routing is managed by the httpd.Router and
-is built specifically to handle the task of
-implementing microservices via an HTTP REST
-protocol. Due to the nature of APIs in general
-and microserives specifally, this has been
-limited to the following transaction types
-as recognized via the HTTP Content-Type header:
-
-Form Data: application/x-www-form-urlencoded
-JSON Data: application/json
-File Uploads: multipart/form-data
-
-All other mime types are treated as text when
-sent to the controller and can be specifically
-managed at the application level.
-*/
 package main
 
 import (
@@ -33,22 +10,23 @@ import (
 	"os"
 	"time"
 
+	x4 "github.com/dharmadog888/opango/4x/httpd4x"
 	httpd "github.com/dharmadog888/opango/httpd"
 )
 
 const (
-	// DefaultConfig points to config file containing
+	// defaultConfig points to config file containing
 	// server ip:port and location of html content
-	DefaultConfig = "./config/x4.json"
+	defaulfConfig = "./config/x4.json"
 )
 
 var (
 	// serverConf Server configuration poulated from config file
-	serverConf ServerConf
+	config serverConf
 )
 
-// ServerConf configuration matters
-type ServerConf struct {
+// serverConf configuration matters
+type serverConf struct {
 	Addr        string
 	ContentRoot string
 }
@@ -60,8 +38,8 @@ func initServerConf(path string) (err error) {
 	fmt.Printf("%s\n", data)
 	if e == nil {
 		// ...parse
-		json.Unmarshal(data, &serverConf)
-		fmt.Printf("%v", serverConf)
+		json.Unmarshal(data, &config)
+		fmt.Printf("%v", config)
 	}
 	return err
 }
@@ -85,7 +63,7 @@ func Usage() {
 func main() {
 	// command line processing
 	flag.Usage = Usage
-	var confLoc = flag.String("config", DefaultConfig, "Location of Server Config file (./config/4x.json)")
+	var confLoc = flag.String("config", defaulfConfig, "Location of Server Config file (./config/4x.json)")
 	flag.Parse()
 
 	// set up the config info
@@ -94,11 +72,11 @@ func main() {
 	}
 
 	// build the web router with a single controller and an html content root
-	router := httpd.NewRouter(httpd.RouteMap{"/x4": NewX4Controller()}, serverConf.ContentRoot)
+	router := httpd.NewRouter(httpd.RouteMap{"/x4": x4.NewX4Controller()}, config.ContentRoot)
 
 	// configure the server
 	s := &http.Server{
-		Addr:           serverConf.Addr,
+		Addr:           config.Addr,
 		Handler:        makeHandler(router.RouteRequest),
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
@@ -106,7 +84,7 @@ func main() {
 	}
 
 	// engage!
-	log.Printf("-- Starting Web Service on %s", serverConf.Addr)
+	log.Printf("-- Starting Web Service on %s", config.Addr)
 	if err := s.ListenAndServe(); err != nil {
 		log.Fatalf("!! Web Server Crashed:\n--> %s", err)
 	}

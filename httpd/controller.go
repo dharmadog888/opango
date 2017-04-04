@@ -1,8 +1,13 @@
 package httpd
 
 /*
-   A Controller maps a REST endpoint to an
-   endpoint processor
+A Controller maps a REST endpoint to an
+endpoint handler (processor)
+
+handlers take the form
+
+  handlerXXX(req httpd.RestAPI, params httpd.ParamMap) httpd.APIResponse
+
 */
 import (
 	"fmt"
@@ -53,7 +58,15 @@ type IController interface {
 	Routes() []EndpointMap
 }
 
-// Controller the base implementation type
+/*
+A Controller maps one or more REST endpoints to their assigned
+endpoint handlers (processors)
+
+handlers take the form
+
+  handlerXXX(req httpd.RestAPI, params httpd.ParamMap) httpd.APIResponse
+
+*/
 type Controller struct {
 
 	// the map of endpoints to methods

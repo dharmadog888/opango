@@ -1,4 +1,5 @@
-package main
+// httpd4x Example controller built on opango/httpd
+package httpd4x
 
 import (
 	"fmt"
@@ -18,8 +19,8 @@ type X4Controller struct {
 NewX4Controller creates a new controller that will be created
 by the app and assigned to the '/x4' Domain during the server start up and
 assed to the router as (one of) the Domain Controllers for the app. The main
-tast is to create the Routing by constructing all of the EndpointMaps that
-connect an enpoint (URI), a method, and a processor .
+task is to create the Routing by constructing all of the EndpointMaps that
+connect the incoming URI / Method values to a specific handler.
 */
 func NewX4Controller() *X4Controller {
 	x4 := X4Controller{}
@@ -45,7 +46,7 @@ func NewX4Controller() *X4Controller {
 handleJSON demonstrates the JSON Passing. A little difficult from a single lightweight HTML page
 so need to test via curl, python etc.
 */
-func (x4 *X4Controller) handleJSON(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.ApiResponse) {
+func (x4 *X4Controller) handleJSON(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.APIResponse) {
 
 	resp.Code = 200
 	resp.Message = "Ok"
@@ -57,7 +58,7 @@ func (x4 *X4Controller) handleJSON(req httpd.RestAPI, params httpd.ParamMap) (re
 /*
 handleForm eturns a dump of the form data that came in from the request
 */
-func (x4 *X4Controller) handleForm(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.ApiResponse) {
+func (x4 *X4Controller) handleForm(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.APIResponse) {
 
 	resp.Code = 200
 	resp.Message = "Ok"
@@ -69,7 +70,7 @@ func (x4 *X4Controller) handleForm(req httpd.RestAPI, params httpd.ParamMap) (re
 /*
 handleFile uploads a File from remote (client) computer (via file tag in HTML form)
 */
-func (x4 *X4Controller) handleFile(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.ApiResponse) {
+func (x4 *X4Controller) handleFile(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.APIResponse) {
 
 	resp.Code = 200
 	resp.Message = "Ok"
@@ -81,7 +82,7 @@ func (x4 *X4Controller) handleFile(req httpd.RestAPI, params httpd.ParamMap) (re
 /*
 handleQuerystring returns a dump of Querystring data sent with URL (standard k=v[&k=v...] format.
 */
-func (x4 *X4Controller) handleQuerystring(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.ApiResponse) {
+func (x4 *X4Controller) handleQuerystring(req httpd.RestAPI, params httpd.ParamMap) (resp httpd.APIResponse) {
 
 	resp.Code = 200
 	resp.Message = "Ok"
