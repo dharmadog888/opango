@@ -1,0 +1,9 @@
+{
+	"ImportPath": "github.com/dharmadog888/opango",
+	"GoVersion": "go1.8",
+	"GodepVersion": "v79",
+	"Packages": [
+		"./httpd"
+	],
+	"Deps": []
+}
