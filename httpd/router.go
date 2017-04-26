@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	defaultIndexPage = "index.html"
-	ioBuffSize       = 2 * 1024 * 1024 // 2M
+	defaultIndexPage    = "index.html"
+	ioBuffSize          = 2 * 1024 * 1024 // 2M
+	defaultResponseType = "application/json"
 )
 
 /*
@@ -51,18 +52,21 @@ type RestAPI struct {
 	MPForm      multipart.Form
 	Querystring url.Values
 	Body        string
+	Header      http.Header
 }
 
 // HTTP Results
 type httpResponse struct {
 	Code    int
 	Message string
+	Header  http.Header
 }
 
 // APIResponse container for results
 type APIResponse struct {
 	httpResponse
-	Body string
+	Body        string
+	ContentType string
 }
 
 // RouteMap map to assign URI to Controller
@@ -185,7 +189,7 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		}
 
 		// yes, delegate to controller...
-		api := RestAPI{URL: reqURL, URI: uri, Method: req.Method, Querystring: req.URL.Query()}
+		api := RestAPI{URL: reqURL, URI: uri, Method: req.Method, Querystring: req.URL.Query(), Header: req.Header}
 
 		// some investigation is required to
 		// figure out what type of data we got
@@ -235,6 +239,10 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 
 		apiRsp := ctrl.Route(api)
 
+		// default to JSON if controller doesn't set
+		if len(apiRsp.ContentType) == 0 {
+			apiRsp.ContentType = defaultResponseType
+		}
 		// what say the controler?
 		switch {
 		case apiRsp.Code > 399:
@@ -243,9 +251,18 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		case apiRsp.Code > 299:
 			log.Printf("~~ <-- %d Redirect: %s", apiRsp.Code, apiRsp.Message)
 			http.Redirect(resp, req, apiRsp.Message, apiRsp.Code)
-		case apiRsp.Code == 200:
-			log.Printf("~~ <-- %d Ok: %s", apiRsp.Code, apiRsp.Message)
+		case apiRsp.Code > 199:
+
+			// transfer headers (if any)
+			for ky, vs := range apiRsp.Header {
+				for _, val := range vs {
+					resp.Header().Add(ky, val)
+				}
+			}
+
+			// and send the response body...
 			resp.Write([]byte(apiRsp.Body))
+
 		}
 
 	} else {
