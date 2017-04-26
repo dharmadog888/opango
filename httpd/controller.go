@@ -11,7 +11,6 @@ handlers take the form
 */
 import (
 	"fmt"
-	"log"
 
 	"regexp"
 	"strings"

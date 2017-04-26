@@ -168,12 +168,13 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 
 	// hacking filters
 	if strings.Contains(reqURL, "..") {
-		log.Printf("!! <-- 402: Forbidden (%s)", reqURL)
 		http.Error(resp, "Forbidden,", 402)
 		return
 	}
 
-	ctrl, found := r.findRoute(reqURL)
+	reqURI := strings.Split(reqURL, "?")[0]
+
+	ctrl, found := r.findRoute(reqURI)
 
 	// do we have routing
 	if found != "" {
@@ -185,10 +186,10 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		}
 
 		// strip out found nodes
-		uri := strings.Split(reqURL[len(found):], "/")
+		uri := strings.Split(reqURI[len(found):], "/")
 
 		// and delegate to found controller
-		api := RestAPI{URL: reqURL, URI: uri, Method: req.Method, Header: req.Header, Querystring: req.URL.Query()}
+		api := RestAPI{URL: reqURI, URI: uri, Method: req.Method, Header: req.Header, Querystring: req.URL.Query()}
 
 		// some investigation is required to
 		// figure out what type of data we got
