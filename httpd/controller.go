@@ -11,7 +11,7 @@ handlers take the form
 */
 import (
 	"fmt"
-	"log"
+
 	"regexp"
 	"strings"
 )
@@ -89,8 +89,6 @@ func (ctlr *Controller) Route(apiParams RestAPI) (resp APIResponse) {
 
 		resp.Message = fmt.Sprintf("Path not found %s", apiParams.URL)
 		resp.Body = "{\"Error\": \"No endpoint found\"}"
-
-		log.Printf("?? Routing not found %v\n", apiParams)
 	}
 
 	// return results
