@@ -48,6 +48,7 @@ type RestAPI struct {
 	URI         []string
 	JSON        json.Decoder
 	Form        url.Values
+	Header      http.Header
 	MPForm      multipart.Form
 	Querystring url.Values
 	Body        string
@@ -57,6 +58,7 @@ type RestAPI struct {
 type httpResponse struct {
 	Code    int
 	Message string
+	Cookie  http.Cookie
 }
 
 // APIResponse container for results
@@ -163,8 +165,6 @@ func (r Router) serveFile(path string, resp http.ResponseWriter) error {
 func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 
 	reqURL := fmt.Sprintf("%s", req.URL)
-	urisplit := strings.Split(reqURL, "?")
-	uri := strings.Split(urisplit[0], "/")
 
 	// hacking filters
 	if strings.Contains(reqURL, "..") {
@@ -184,8 +184,11 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		// yes, delegate to controller...
-		api := RestAPI{URL: reqURL, URI: uri, Method: req.Method, Querystring: req.URL.Query()}
+		// strip out found nodes
+		uri := strings.Split(reqURL[len(found):], "/")
+
+		// and delegate to found controller
+		api := RestAPI{URL: reqURL, URI: uri, Method: req.Method, Header: req.Header, Querystring: req.URL.Query()}
 
 		// some investigation is required to
 		// figure out what type of data we got
@@ -232,8 +235,10 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 				}
 			}
 		}
-
-		apiRsp := ctrl.Route(api)
+		var apiRsp APIResponse
+		if apiRsp = ctrl.Route(api); &apiRsp.Cookie != nil {
+			http.SetCookie(resp, &apiRsp.Cookie)
+		}
 
 		// what say the controler?
 		switch {
