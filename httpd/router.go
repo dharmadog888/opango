@@ -53,7 +53,7 @@ type RestAPI struct {
 	MPForm      multipart.Form
 	Querystring url.Values
 	Body        string
-	Header      http.Header
+	Cookies     []*http.Cookie
 }
 
 // HTTP Results
@@ -61,7 +61,7 @@ type httpResponse struct {
 	Code    int
 	Message string
 	Header  http.Header
-	Cookie  http.Cookie
+	Cookies []*http.Cookie
 }
 
 // APIResponse container for results
@@ -69,6 +69,26 @@ type APIResponse struct {
 	httpResponse
 	Body        string
 	ContentType string
+}
+
+// SetCookie adds or replaces a cookie in the response stack
+func (rsp *httpResponse) SetCookie(cookie *http.Cookie) bool {
+	found := false
+
+	// look for existing
+	for i, c := range rsp.Cookies {
+		if c.Name == cookie.Name {
+			rsp.Cookies[i] = cookie
+			found = true
+			break
+		}
+	}
+	if !found {
+		// add new
+		rsp.Cookies = append(rsp.Cookies, cookie)
+	}
+
+	return found
 }
 
 // RouteMap map to assign URI to Controller
@@ -193,7 +213,10 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		uri := strings.Split(reqURI[len(found):], "/")
 
 		// and delegate to found controller
-		api := RestAPI{URL: reqURI, URI: uri, Method: req.Method, Header: req.Header, Querystring: req.URL.Query()}
+		api := RestAPI{URL: reqURI, URI: uri, Method: req.Method,
+			Header: req.Header, Querystring: req.URL.Query(),
+			Cookies: req.Cookies(),
+		}
 
 		// some investigation is required to
 		// figure out what type of data we got
@@ -241,8 +264,10 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 			}
 		}
 		var apiRsp APIResponse
-		if apiRsp = ctrl.Route(api); &apiRsp.Cookie != nil {
-			http.SetCookie(resp, &apiRsp.Cookie)
+
+		// process new cookies
+		for _, c := range apiRsp.Cookies {
+			http.SetCookie(resp, c)
 		}
 
 		// default to JSON if controller doesn't set
