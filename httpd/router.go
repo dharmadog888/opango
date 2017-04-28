@@ -27,9 +27,8 @@ import (
 )
 
 const (
-	defaultIndexPage    = "index.html"
-	ioBuffSize          = 2 * 1024 * 1024 // 2M
-	defaultResponseType = "application/json"
+	defaultIndexPage = "index.html"
+	ioBuffSize       = 2 * 1024 * 1024 // 2M
 )
 
 /*
@@ -53,7 +52,6 @@ type RestAPI struct {
 	MPForm      multipart.Form
 	Querystring url.Values
 	Body        string
-	Cookies     []*http.Cookie
 }
 
 // HTTP Results
@@ -61,34 +59,13 @@ type httpResponse struct {
 	Code    int
 	Message string
 	Header  http.Header
-	Cookies []*http.Cookie
+	Cookie  http.Cookie
 }
 
 // APIResponse container for results
 type APIResponse struct {
 	httpResponse
-	Body        string
-	ContentType string
-}
-
-// SetCookie adds or replaces a cookie in the response stack
-func (rsp *httpResponse) SetCookie(cookie *http.Cookie) bool {
-	found := false
-
-	// look for existing
-	for i, c := range rsp.Cookies {
-		if c.Name == cookie.Name {
-			rsp.Cookies[i] = cookie
-			found = true
-			break
-		}
-	}
-	if !found {
-		// add new
-		rsp.Cookies = append(rsp.Cookies, cookie)
-	}
-
-	return found
+	Body string
 }
 
 // RouteMap map to assign URI to Controller
@@ -213,10 +190,7 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		uri := strings.Split(reqURI[len(found):], "/")
 
 		// and delegate to found controller
-		api := RestAPI{URL: reqURI, URI: uri, Method: req.Method,
-			Header: req.Header, Querystring: req.URL.Query(),
-			Cookies: req.Cookies(),
-		}
+		api := RestAPI{URL: reqURI, URI: uri, Method: req.Method, Header: req.Header, Querystring: req.URL.Query()}
 
 		// some investigation is required to
 		// figure out what type of data we got
@@ -264,16 +238,18 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 			}
 		}
 		var apiRsp APIResponse
-
-		// process new cookies
-		for _, c := range apiRsp.Cookies {
-			http.SetCookie(resp, c)
+		if apiRsp = ctrl.Route(api); &apiRsp.Cookie != nil {
+			// set Cookiie
+			http.SetCookie(resp, &apiRsp.Cookie)
 		}
 
-		// default to JSON if controller doesn't set
-		if len(apiRsp.ContentType) == 0 {
-			apiRsp.ContentType = defaultResponseType
+		// transfer any headers
+		for k, v := range apiRsp.Header {
+			for _, vv := range v {
+				resp.Header().Add(k, vv)
+			}
 		}
+
 		// what say the controler?
 		switch {
 		case apiRsp.Code > 399:
@@ -282,18 +258,9 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 		case apiRsp.Code > 299:
 			log.Printf("~~ <-- %d Redirect: %s", apiRsp.Code, apiRsp.Message)
 			http.Redirect(resp, req, apiRsp.Message, apiRsp.Code)
-		case apiRsp.Code > 199:
-
-			// transfer headers (if any)
-			for ky, vs := range apiRsp.Header {
-				for _, val := range vs {
-					resp.Header().Add(ky, val)
-				}
-			}
-
-			// and send the response body...
+		case apiRsp.Code == 200:
+			log.Printf("~~ <-- %d Ok: %s", apiRsp.Code, apiRsp.Message)
 			resp.Write([]byte(apiRsp.Body))
-
 		}
 
 	} else {
