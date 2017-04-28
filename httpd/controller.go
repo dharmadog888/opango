@@ -104,7 +104,7 @@ func (ctlr *Controller) SetupRouting(endpoints []EndpointMap) (err error) {
 }
 
 // Routes reflect routing maps
-func (ctlr Controller) Routes() (emp []EndpointMap) {
+func (ctlr Controller) Routes() []EndpointMap {
 	// return mappings
 	return ctlr.emp
 }
