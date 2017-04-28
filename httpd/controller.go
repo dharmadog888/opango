@@ -76,7 +76,7 @@ type Controller struct {
 
 // Route direct request to correct processor
 func (ctlr *Controller) Route(apiParams RestAPI) (resp APIResponse) {
-
+	fmt.Println(apiParams)
 	// test for match
 	if params, proc := ctlr.URIMatch(apiParams.URI, apiParams.Method); proc != nil {
 		// found one, call it...
@@ -106,7 +106,7 @@ func (ctlr *Controller) SetupRouting(endpoints []EndpointMap) (err error) {
 // Routes reflect routing maps
 func (ctlr Controller) Routes() (emp []EndpointMap) {
 	// return mappings
-	return emp
+	return ctlr.emp
 }
 
 // URIMatch tries to identify a processor given an array of URI nodes
