@@ -162,6 +162,24 @@ func (r Router) serveFile(path string, resp http.ResponseWriter) error {
 	return err
 }
 
+// xferResponse marshalls any process created cookies
+// and or headers into the http/web side for return to client
+func (r Router) xferResponse(web http.ResponseWriter, wfid APIResponse) {
+
+	// cookie transfer
+	if &wfid.Cookie != nil {
+		// set Cookiie
+		http.SetCookie(web, &wfid.Cookie)
+	}
+
+	// headers transfer
+	for k, v := range wfid.Header {
+		for _, vv := range v {
+			web.Header().Add(k, vv)
+		}
+	}
+}
+
 // RouteRequest Start point for routing from server ** //
 func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 
@@ -230,36 +248,27 @@ func (r Router) RouteRequest(resp http.ResponseWriter, req *http.Request) {
 					if err == io.EOF {
 						break
 					} else if err != nil {
-						log.Println("!! <-- IO Error reading request body", found)
-						http.Error(resp, "IO Error", 500)
+						// error out with
+						http.Error(resp, fmt.Sprintf("IO Error: %s", err), 500)
 						return
 					}
 				}
 			}
 		}
-		var apiRsp APIResponse
-		if apiRsp = ctrl.Route(api); &apiRsp.Cookie != nil {
-			// set Cookiie
-			http.SetCookie(resp, &apiRsp.Cookie)
-		}
 
-		// transfer any headers
-		for k, v := range apiRsp.Header {
-			for _, vv := range v {
-				resp.Header().Add(k, vv)
-			}
-		}
+		// call the controller to process
+		apiRsp := ctrl.Route(api)
 
 		// what say the controler?
 		switch {
 		case apiRsp.Code > 399:
-			log.Printf("-- <-- %d Error: %s", apiRsp.Code, apiRsp.Message)
 			http.Error(resp, apiRsp.Message, apiRsp.Code)
 		case apiRsp.Code > 299:
-			log.Printf("~~ <-- %d Redirect: %s", apiRsp.Code, apiRsp.Message)
+			// transfer header info
+			r.xferResponse(resp, apiRsp)
 			http.Redirect(resp, req, apiRsp.Message, apiRsp.Code)
 		case apiRsp.Code == 200:
-			log.Printf("~~ <-- %d Ok: %s", apiRsp.Code, apiRsp.Message)
+			r.xferResponse(resp, apiRsp)
 			resp.Write([]byte(apiRsp.Body))
 		}
 
